@@ -1,0 +1,177 @@
+%%%% Here's my generalized MATLAB code for the anharmonic potential energy for a 3D crystal:
+
+
+Note that this code assumes that the potential energy parameters $\Phi$ and $\Psi$ have already been defined. These would typically be computed using some kind of theoretical or computational method. Also, the coefficients $c_1$ and $c_2$ are arbitrary and can be adjusted to change the strength of the potential.
+% Define the size of the crystal lattice
+N = [10,10,10]; % Number of unit cells in each direction
+M = 3*N; % Total number of atoms
+
+% Define the mass of each atom (in atomic mass units)
+m = 1.0;
+
+% Define the lattice constant
+a = 1.0;
+
+% Define the spring constant for the harmonic part of the potential
+k = 1.0;
+
+% Define the anharmonic coefficients for the potential
+Phi = zeros(M,M,3,3);
+Psi = zeros(M,M,M,3,3,3);
+
+% Calculate the anharmonic coefficients using numerical differentiation
+delta = 1e-6; % Step size for numerical differentiation
+
+for l = 1:M
+    for b = 1:3
+        for l_prime = 1:M
+            for b_prime = 1:3
+                % Calculate the second derivative of V w.r.t. u_l,b and u_l',b'
+                u = zeros(M,3);
+                u(l,b) = delta;
+                u(l_prime,b_prime) = delta;
+                d2V = (potential_energy(u,k,a,N,m) - 2*potential_energy(zeros(M,3),k,a,N,m) + potential_energy(-u,k,a,N,m))/(delta^2);
+                
+                % Assign the anharmonic coefficient to the appropriate element in the Phi tensor
+                Phi(l,b,l_prime,b_prime) = d2V/(m*a^2);
+                
+                for l_pp = 1:M
+                    for b_pp = 1:3
+                        % Calculate the third derivative of V w.r.t. u_l,b, u_l',b', and u_l'',b''
+                        u_pp = zeros(M,3);
+                        u_pp(l,b) = delta;
+                        u_pp(l_prime,b_prime) = delta;
+                        u_pp(l_pp,b_pp) = delta;
+                        d3V = (potential_energy(u+u_pp,k,a,N,m) - potential_energy(u-u_pp,k,a,N,m) - potential_energy(u_pp,k,a,N,m) + potential_energy(-u-u_pp,k,a,N,m))/(2*(delta^3));
+                        
+                        % Assign the anharmonic coefficient to the appropriate element in the Psi tensor
+                        Psi(l,b,l_prime,b_prime,l_pp,b_pp) = d3V/(m*a^3);
+                    end
+                end
+            end
+        end
+    end
+end
+
+% Define a function to calculate the potential energy given a displacement vector u
+function V = potential_energy(u,k,a,N,m)
+    M = size(u,1);
+    V = 0;
+    for l = 1:M
+        for l_prime = 1:M
+            R_l = position_vector(l,a,N);
+            R_l_prime = position_vector(l_prime,a,N);
+            if l_prime > l % Only count each pair of atoms once
+                for b = 1:3
+                    for b_prime = 1:3
+                        V = V + (0.5*k*(u(l,b)-u(l_prime,b_prime))^2 + 0.5*sum(sum(Phi(l,b,l_prime,b_prime)*u(l,:)'*u(l_prime,:))) + (1/6)*sum(sum(sum(Psi(l,b,l_prime,b_prime,:,:).*kron(u(l,:)',kron(u(l_prime,:)',u))))));
+                    end
+                end
+            end
+        end
+    end
+end
+
+% Define a function to calculate the position vector of a lattice
+% Generalized Matlab code for anharmonic potential energy for a 3D crystal
+
+% Set up the crystal lattice structure
+a = 3.0; % lattice constant
+N = 5; % number of unit cells in each direction
+L = a*N; % total length of the crystal in each direction
+[x,y,z] = meshgrid(-L/2:a:L/2-a); % create a meshgrid for the crystal lattice points
+r = [x(:), y(:), z(:)]; % vector of crystal lattice points
+M = size(r,1); % number of lattice points
+
+% Set up the displacement matrix for each lattice point in each direction
+u = 0.1*randn(M,3); % random displacement matrix with small magnitude
+
+% Calculate the potential energy of the crystal
+V = 0;
+for l = 1:M
+for lb = 1:3
+for lp = 1:M
+for lbp = 1:3
+d = r(l,:)-r(lp,:);
+if abs(d(1))>L/2, d(1) = d(1)-sign(d(1))*L; end % apply periodic boundary conditions
+if abs(d(2))>L/2, d(2) = d(2)-sign(d(2))*L; end % apply periodic boundary conditions
+if abs(d(3))>L/2, d(3) = d(3)-sign(d(3))L; end % apply periodic boundary conditions
+phi = zeros(3,3);
+for alpha = 1:3
+for beta = 1:3
+dphi = @(x) phi_alpha_beta(x,alpha,beta,r(l,:),r(lp,:),lb,lbp);
+phi(alpha,beta) = numerical_gradient(dphi,u,1e-6);
+end
+end
+V = V + 0.5sum(sum(phi.*u(lb,l)*u(lbp,lbp)));
+
+scss
+Copy code
+            for lpp = 1:M
+                for lbpp = 1:3
+                    dpp = r(lp,:)-r(lpp,:);
+                    if abs(dpp(1))>L/2, dpp(1) = dpp(1)-sign(dpp(1))*L; end % apply periodic boundary conditions
+                    if abs(dpp(2))>L/2, dpp(2) = dpp(2)-sign(dpp(2))*L; end % apply periodic boundary conditions
+                    if abs(dpp(3))>L/2, dpp(3) = dpp(3)-sign(dpp(3))*L; end % apply periodic boundary conditions
+                    psi = zeros(3,3,3);
+                    for alpha = 1:3
+                        for beta = 1:3
+                            for gamma = 1:3
+                                dpsi = @(x) psi_alpha_beta_gamma(x,alpha,beta,gamma,r(l,:),r(lp,:),r(lpp,:),lb,lbp,lbpp);
+                                psi(alpha,beta,gamma) = numerical_gradient(dpsi,u,1e-6);
+                            end
+                        end
+                    end
+                    V = V + (1/6)*sum(sum(sum(psi.*u(lb,l)*u(lbp,lbp)*u(lbpp,lbpp))));
+                end
+            end
+        end
+    end
+end
+% Define the crystal lattice parameters
+a = 5; % Lattice constant
+N = 5; % Number of unit cells in each direction
+L = a*N; % Total length of crystal in each direction
+
+% Define the displacement vectors
+dx = a/10; % Displacement step
+x = -L/2:dx:L/2; % Displacement grid
+[X,Y,Z] = meshgrid(x); % Create a 3D grid for displacement vectors
+u = zeros(size(X,1),size(Y,2),size(Z,3),3); % Array to store displacement vectors
+
+% Define the potential energy parameters
+Phi = zeros(3,3,N,N,N,N); % Second-rank cartesian tensor
+Psi = zeros(3,3,3,N,N,N,N,N,N); % Third-rank cartesian tensor
+c1 = 1; % Coefficient for second-rank tensor
+c2 = 1; % Coefficient for third-rank tensor
+
+% Compute the potential energy
+V = 0;
+for l=1:N
+    for m=1:N
+        for n=1:N
+            for alpha=1:3
+                for beta=1:3
+                    V = V + 0.5*c1*Phi(alpha,beta,l,m,n,1,1,1)*u(l,m,n,alpha)*u(l,m,n,beta);
+                    for p=1:N
+                        for q=1:N
+                            for r=1:N
+                                for gamma=1:3
+                                    V = V + (1/6)*c2*Psi(alpha,beta,gamma,l,m,n,p,q,r)*u(l,m,n,alpha)*u(p,q,r,beta)*u(p,q,r,gamma);
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+% Plot the potential energy
+figure;
+isosurface(X,Y,Z,V);
+xlabel('X');
+ylabel('Y');
+zlabel('Z');
+title('Anharmonic Potential Energy');

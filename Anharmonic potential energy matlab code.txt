@@ -1,0 +1,45 @@
+% Define the second and third order cartesian tensors Phi and Psi
+% Phi is a matrix with 3x3 elements, and Psi is a 3D array with 3x3x3 elements
+% For simplicity, we assume that all elements of Phi and Psi are known
+Phi = [1 0 0; 0 2 0; 0 0 3];
+Psi = zeros(3,3,3);
+Psi(1,1,1) = 1;
+Psi(2,2,2) = 2;
+Psi(3,3,3) = 3;
+Psi(1,2,3) = 1;
+Psi(2,3,1) = 2;
+Psi(3,1,2) = 3;
+% Note: the above values of Phi and Psi are just examples and can be changed
+
+% Define the positions of the atoms, represented by the displacement vectors u
+% For simplicity, we assume that the positions are known and have a regular structure
+n = 3; % number of atoms in each direction
+L = 1; % distance between adjacent atoms
+u = zeros(n^3,3); % displacement vectors for each atom
+for i = 1:n
+    for j = 1:n
+        for k = 1:n
+            u((i-1)*n^2 + (j-1)*n + k, :) = [(i-1)*L (j-1)*L (k-1)*L];
+        end
+    end
+end
+
+% Define the potential energy function V using the given equation
+V = 0;
+for lb = 1:n^3
+    for lbp = 1:n^3
+        for alpha = 1:3
+            for beta = 1:3
+                V = V + 0.5*Phi(alpha,beta)*(u(lb,alpha)*u(lbp,beta));
+                for lbpp = 1:n^3
+                    for gamma = 1:3
+                        V = V + (1/6)*Psi(alpha,beta,gamma)*(u(lb,alpha)*u(lbp,beta)*u(lbpp,gamma));
+                    end
+                end
+            end
+        end
+    end
+end
+
+% Display the potential energy value
+fprintf('Potential energy value: %.3f\n', V);
